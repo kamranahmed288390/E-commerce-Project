@@ -25,7 +25,7 @@ export const registration = async (req,res) => {
         res.cookie("token",token,{
             httpOnly: true,
             secure: false,
-            sameSite:"Strict",
+            sameSite:"Lax",
             maxAge: 7 * 24 * 60 * 1000
         })
         return res.status(201).json(user)
@@ -38,8 +38,41 @@ export const registration = async (req,res) => {
 
 export const login =  async (req,res) => {
     try {
+        let {email,password} = req.body
+        let user = await User.findOne({email})
+        if (!user){
+            return res.status(404).json({message:"User is not found"})
+            
+        }
+        let isMatch = await bcrypt.compare(password,user.password)
+        if(!isMatch){
+             return res.status(400).json({message:"Incorrect Password"})
+        }
+        let token = await genToken(user.id)
+        res.cookie("token",token,{
+        httpOnly: true,
+        secure: false,
+        sameSite:"Lax",
+        maxAge: 7 * 24 * 60 * 1000
+        })
+        return res.status(201).json({message:"Login successful"})
         
     } catch (error) {
+        console.log("Login error")
+        return res.status(500).json({message:`Login error ${error}`})
         
     }
+}
+
+export const logOut = async (req,res) => {
+    try {
+        res.clearCookie("token")
+        return res.status(200).json({message:"Logout successful"})
+    } catch (error) {
+         console.log("logOut error")
+        return res.status(500).json({message:`Logout error ${error}`})
+        
+    }
+
+    
 }
